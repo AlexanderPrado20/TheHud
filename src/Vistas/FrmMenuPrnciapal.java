@@ -20,7 +20,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
 
     // Paneles de contenido (se crean una sola vez para conservar su estado)
     private PanelVentas panelVentas;
-    private PanelInventario panelInventario; // CRUD de productos
+    private PanelInventario panelInventario; // Tablero de control (KPIs + gráficas)
     private PanelFinanzas panelFinanzas;
     private PanelGraficas panelGraficas;
 
@@ -171,7 +171,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
             }
         });
 
-        btnProductos.setText("Productos / Inventario");
+        btnProductos.setText("Indicadores ");
         btnProductos.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnProductosActionPerformed(evt);
@@ -185,7 +185,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
             }
         });
 
-        btnGraficas.setText("Gráficas");
+        btnGraficas.setText("Productos / Inventario");
         btnGraficas.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnGraficasActionPerformed(evt);
@@ -202,11 +202,11 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
                 .addGap(24, 24, 24)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnVentas, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
-                    .addComponent(btnProductos, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
-                    .addComponent(btnFinanzas, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
-                    .addComponent(btnGraficas, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
-                    .addComponent(btnExportarPdf, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE))
+                    .addComponent(btnVentas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnProductos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnFinanzas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnGraficas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnExportarPdf, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(24, 24, 24))
         );
         jPanel1Layout.setVerticalGroup(
@@ -235,6 +235,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 260, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, 0)
                 .addComponent(panelDerecha, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -244,6 +245,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnVentasActionPerformed(java.awt.event.ActionEvent evt) {
@@ -261,6 +263,8 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
     private void btnProductosActionPerformed(java.awt.event.ActionEvent evt) {
         if (panelInventario == null) {
             panelInventario = new PanelInventario();
+        } else {
+            panelInventario.refrescar();
         }
         lblSeccion.setText("Productos / Inventario");
         mostrarPanel(panelInventario);
