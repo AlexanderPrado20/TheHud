@@ -536,7 +536,6 @@ public class PanelVentas extends javax.swing.JPanel {
         jPanel1.setBorder(javax.swing.BorderFactory.createCompoundBorder(
                 javax.swing.BorderFactory.createEmptyBorder(0, 0, 12, 0), jPanel1.getBorder()));
 
-
         // ---- Cabecera ----
         logoCabecera(jLabel8, 46);
         jLabel1.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 22));
