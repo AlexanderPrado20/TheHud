@@ -23,6 +23,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
     private PanelInventario panelInventario; // Tablero de control (KPIs + gráficas)
     private PanelFinanzas panelFinanzas;
     private PanelGraficas panelGraficas;
+    private PanelCombos panelCombos; // Combos / promociones
 
     public FrmMenuPrnciapal() {
         this("empleado", "Empleado");
@@ -100,6 +101,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
         estilizarBotonMenu(btnProductos, MaterialDesign.MDI_PACKAGE_VARIANT);
         estilizarBotonMenu(btnFinanzas, MaterialDesign.MDI_CASH_MULTIPLE);
         estilizarBotonMenu(btnGraficas, MaterialDesign.MDI_CHART_BAR);
+        estilizarBotonMenu(btnCombos, MaterialDesign.MDI_SALE);
         estilizarBotonMenu(btnExportarPdf, MaterialDesign.MDI_FILE_EXPORT);
     }
 
@@ -153,6 +155,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
         btnProductos = new javax.swing.JButton();
         btnFinanzas = new javax.swing.JButton();
         btnGraficas = new javax.swing.JButton();
+        btnCombos = new javax.swing.JButton();
         btnExportarPdf = new javax.swing.JButton();
         panelDerecha = new javax.swing.JPanel();
 
@@ -192,6 +195,13 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
             }
         });
 
+        btnCombos.setText("Combos");
+        btnCombos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCombosActionPerformed(evt);
+            }
+        });
+
         btnExportarPdf.setText("Exportar Reporte PDF");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -206,6 +216,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
                     .addComponent(btnProductos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnFinanzas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnGraficas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnCombos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnExportarPdf, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(24, 24, 24))
         );
@@ -222,6 +233,8 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
                 .addComponent(btnFinanzas, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(12, 12, 12)
                 .addComponent(btnGraficas, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(12, 12, 12)
+                .addComponent(btnCombos, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(12, 12, 12)
                 .addComponent(btnExportarPdf, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -278,7 +291,26 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
         mostrarPanel(panelGraficas);
     }
 
+    private void btnCombosActionPerformed(java.awt.event.ActionEvent evt) {
+        mostrarCombos();
+    }
+
+    /** Abre (o refresca) la sección de combos. Al elegir uno salta a Venta y lo agrega. */
+    private void mostrarCombos() {
+        if (panelCombos == null) {
+            panelCombos = new PanelCombos(combo -> {
+                mostrarVenta();
+                panelVentas.agregarCombo(combo.id, combo.nombre, combo.precio);
+            });
+        } else {
+            panelCombos.refrescar();
+        }
+        lblSeccion.setText("Combos");
+        mostrarPanel(panelCombos);
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnCombos;
     private javax.swing.JButton btnExportarPdf;
     private javax.swing.JButton btnFinanzas;
     private javax.swing.JButton btnGraficas;

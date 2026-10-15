@@ -57,6 +57,7 @@
                       <Component id="btnProductos" min="-2" max="32767" attributes="0"/>
                       <Component id="btnFinanzas" min="-2" max="32767" attributes="0"/>
                       <Component id="btnGraficas" min="-2" max="32767" attributes="0"/>
+                      <Component id="btnCombos" min="-2" max="32767" attributes="0"/>
                       <Component id="btnExportarPdf" min="-2" max="32767" attributes="0"/>
                   </Group>
                   <EmptySpace min="-2" pref="24" max="-2" attributes="0"/>
@@ -76,6 +77,8 @@
                   <Component id="btnFinanzas" min="-2" pref="46" max="-2" attributes="0"/>
                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                   <Component id="btnGraficas" min="-2" pref="46" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
+                  <Component id="btnCombos" min="-2" pref="46" max="-2" attributes="0"/>
                   <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
                   <Component id="btnExportarPdf" min="-2" pref="46" max="-2" attributes="0"/>
                   <EmptySpace max="32767" attributes="0"/>
@@ -122,6 +125,14 @@
           </Properties>
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnGraficasActionPerformed"/>
+          </Events>
+        </Component>
+        <Component class="javax.swing.JButton" name="btnCombos">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Combos"/>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnCombosActionPerformed"/>
           </Events>
         </Component>
         <Component class="javax.swing.JButton" name="btnExportarPdf">

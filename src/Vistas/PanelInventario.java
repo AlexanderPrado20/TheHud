@@ -105,9 +105,7 @@ public class PanelInventario extends javax.swing.JPanel {
         refrescar();
     }
 
-    // =========================================================
-    //  Construccion de la interfaz
-    // =========================================================
+ 
     private void construirInterfaz() {
         add(crearCabecera(), BorderLayout.NORTH);
 

@@ -48,6 +48,9 @@ public class PanelVentas extends javax.swing.JPanel {
     private static final int COL_SUBTOTAL = 4;
     private static final int COL_DESCUENTO = 5;
 
+    // Prefijo del código con el que se identifican los combos en el carrito
+    private static final String COMBO_PREFIJO = "COMBO-";
+
     // Grupo de botones de pago (fuera del código generado para que no se pierda al regenerar)
     private final javax.swing.ButtonGroup grupoPago = new javax.swing.ButtonGroup();
 
@@ -135,9 +138,34 @@ public class PanelVentas extends javax.swing.JPanel {
         }
     }
 
+    /**
+     * Agrega una promoción/combo al carrito. La fila se identifica con el
+     * prefijo "COMBO-" y al cobrar se registra en la tabla detalle_combos
+     * (los combos no descuentan stock de productos).
+     */
+    public void agregarCombo(int idCombo, String nombre, double precio) {
+        String codigo = COMBO_PREFIJO + idCombo;
+
+        for (int i = 0; i < modeloTabla.getRowCount(); i++) {
+            String codEnTabla = modeloTabla.getValueAt(i, COL_CODIGO).toString();
+            if (codEnTabla.equals(codigo)) {
+                int cantActual = getInt(i, COL_CANTIDAD);
+                int nuevaCant = cantActual + 1;
+                double desc = getDouble(i, COL_DESCUENTO);
+                modeloTabla.setValueAt(nuevaCant, i, COL_CANTIDAD);
+                modeloTabla.setValueAt(calcularSubtotal(nuevaCant, precio, desc), i, COL_SUBTOTAL);
+                calcularTotal();
+                return;
+            }
+        }
+
+        modeloTabla.addRow(new Object[]{codigo, nombre, 1, precio, precio, 0.0});
+        calcularTotal();
+        txtCodigoBarras.requestFocus();
+    }
+
     /** Recalcula el subtotal de una fila usando cantidad, precio y descuento (%). */
-    private void recalcularFila(int fila) {
-        int cant = getInt(fila, COL_CANTIDAD);
+    private void recalcularFila(int fila) {        int cant = getInt(fila, COL_CANTIDAD);
         double precio = getDouble(fila, COL_PRECIO);
         double desc = getDouble(fila, COL_DESCUENTO);
         modeloTabla.setValueAt(calcularSubtotal(cant, precio, desc), fila, COL_SUBTOTAL);
@@ -1051,10 +1079,12 @@ public class PanelVentas extends javax.swing.JPanel {
             String sqlSelectId = "SELECT id_producto FROM productos WHERE codigo_barras = ?";
             String sqlDetalle = "INSERT INTO detalle_ventas (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
             String sqlStock = "UPDATE productos SET stock = stock - ? WHERE id_producto = ?";
+            String sqlDetalleCombo = "INSERT INTO detalle_combos (id_venta, id_combo, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
 
             PreparedStatement psSelectId = con.prepareStatement(sqlSelectId);
             PreparedStatement psDetalle = con.prepareStatement(sqlDetalle);
             PreparedStatement psStock = con.prepareStatement(sqlStock);
+            PreparedStatement psDetalleCombo = con.prepareStatement(sqlDetalleCombo);
 
             // 2. Recorrer la tabla del carrito
             for (int i = 0; i < modeloTabla.getRowCount(); i++) {
@@ -1062,6 +1092,18 @@ public class PanelVentas extends javax.swing.JPanel {
                 int cant = getInt(i, COL_CANTIDAD);
                 double precioU = getDouble(i, COL_PRECIO);
                 double subtotal = getDouble(i, COL_SUBTOTAL);
+
+                // Los combos/promociones se guardan aparte y no descuentan stock.
+                if (codBarras.startsWith(COMBO_PREFIJO)) {
+                    int idCombo = Integer.parseInt(codBarras.substring(COMBO_PREFIJO.length()));
+                    psDetalleCombo.setInt(1, idVenta);
+                    psDetalleCombo.setInt(2, idCombo);
+                    psDetalleCombo.setInt(3, cant);
+                    psDetalleCombo.setDouble(4, precioU);
+                    psDetalleCombo.setDouble(5, subtotal);
+                    psDetalleCombo.executeUpdate();
+                    continue;
+                }
 
                 // Obtener id_producto mediante el código de barras
                 psSelectId.setString(1, codBarras);
