@@ -1,0 +1,11 @@
+# NetBeans / artefactos de compilación
+/dist/
+/build/
+/nbproject/private/
+
+# Clases compiladas sueltas
+*.class
+
+# Sistema
+.DS_Store
+Thumbs.db
