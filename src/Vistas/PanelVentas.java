@@ -360,13 +360,13 @@ public class PanelVentas extends javax.swing.JPanel {
         lblTotal.setOpaque(true);
         lblTotal.setBackground(new java.awt.Color(0, 153, 153));
         lblTotal.setForeground(java.awt.Color.WHITE);
-        lblTotal.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 34));
+        lblTotal.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 26));
         lblTotal.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         lblTotal.setBorder(javax.swing.BorderFactory.createCompoundBorder(
                 javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 204, 204), 1),
-                javax.swing.BorderFactory.createEmptyBorder(6, 14, 6, 14)));
+                javax.swing.BorderFactory.createEmptyBorder(3, 14, 3, 14)));
 
-        lblCambio.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 20));
+        lblCambio.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 18));
         lblCambio.setForeground(java.awt.Color.WHITE);
 
         jLabel2.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
@@ -522,8 +522,8 @@ public class PanelVentas extends javax.swing.JPanel {
         panelLateral.setPreferredSize(new java.awt.Dimension(340, 620));
         txtCliente.setPreferredSize(new java.awt.Dimension(220, 30));
         txtCodigoBarras.setPreferredSize(new java.awt.Dimension(240, 34));
-        txtPagaCon.setPreferredSize(new java.awt.Dimension(0, 34));
-        btnCobrar.setPreferredSize(new java.awt.Dimension(0, 56));
+        txtPagaCon.setPreferredSize(new java.awt.Dimension(0, 30));
+        btnCobrar.setPreferredSize(new java.awt.Dimension(0, 46));
         lblImagen.setPreferredSize(new java.awt.Dimension(300, 190));
         jScrollPane2.setPreferredSize(new java.awt.Dimension(0, 130));
 
@@ -563,6 +563,11 @@ public class PanelVentas extends javax.swing.JPanel {
         etiquetaCobro(jLabel3, TEXTO_SUAVE);
         etiquetaCobro(jLabel4, TEXTO_SUAVE);
         etiquetaCobro(jLabel5, TEXTO_SUAVE);
+        // Ancho fijo para que los controles de cada fila queden alineados.
+        java.awt.Dimension anchoFila = new java.awt.Dimension(66, 18);
+        jLabel3.setPreferredSize(anchoFila);
+        jLabel4.setPreferredSize(anchoFila);
+        jLabel5.setPreferredSize(anchoFila);
         rbEfectivo.setForeground(TEXTO);
         rbTargeta.setForeground(TEXTO);
         lblTotal.setBackground(TEAL);
@@ -585,7 +590,7 @@ public class PanelVentas extends javax.swing.JPanel {
         aplicarEstiloBoton(btnVaciarCarrito, ROJO, java.awt.Color.WHITE);
         aplicarEstiloBoton(btnCancelar, ROJO, java.awt.Color.WHITE);
         aplicarEstiloBoton(btnCobrar, TEAL, java.awt.Color.WHITE);
-        btnCobrar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 18));
+        btnCobrar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 17));
     }
 
     /** Deja los paneles indicados con fondo transparente (heredan el fondo padre). */
@@ -996,6 +1001,7 @@ public class PanelVentas extends javax.swing.JPanel {
         panelTotalCobro.setLayout(new java.awt.BorderLayout());
 
         jLabel2.setText("TOTAL A PAGAR");
+        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         panelTotalCobro.add(jLabel2, java.awt.BorderLayout.NORTH);
 
         lblTotal.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -1006,8 +1012,8 @@ public class PanelVentas extends javax.swing.JPanel {
 
         panelMetodo.setLayout(new java.awt.BorderLayout());
 
-        jLabel3.setText("MÉTODO DE PAGO");
-        panelMetodo.add(jLabel3, java.awt.BorderLayout.NORTH);
+        jLabel3.setText("Método");
+        panelMetodo.add(jLabel3, java.awt.BorderLayout.WEST);
 
         panelRadios.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
 
@@ -1023,8 +1029,8 @@ public class PanelVentas extends javax.swing.JPanel {
 
         panelPagaCon.setLayout(new java.awt.BorderLayout());
 
-        jLabel4.setText("PAGA CON");
-        panelPagaCon.add(jLabel4, java.awt.BorderLayout.NORTH);
+        jLabel4.setText("Paga con");
+        panelPagaCon.add(jLabel4, java.awt.BorderLayout.WEST);
 
         txtPagaCon.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1044,8 +1050,8 @@ public class PanelVentas extends javax.swing.JPanel {
 
         panelCambio.setLayout(new java.awt.BorderLayout());
 
-        jLabel5.setText("CAMBIO");
-        panelCambio.add(jLabel5, java.awt.BorderLayout.NORTH);
+        jLabel5.setText("Cambio");
+        panelCambio.add(jLabel5, java.awt.BorderLayout.WEST);
 
         lblCambio.setText("$ 0.00 MXN");
         panelCambio.add(lblCambio, java.awt.BorderLayout.CENTER);
