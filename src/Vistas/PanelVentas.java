@@ -805,8 +805,7 @@ public class PanelVentas extends javax.swing.JPanel {
         lblClienteNombre.setText(clienteSeleccionado.getNombre());
         lblClientePuntos.setText(clienteSeleccionado.getSaldoPuntos() + " pts disponibles");
         lblClienteCompras.setText("Compras: " + clienteSeleccionado.getTotalCompras()
-                + "  ·  Gastado: $" + String.format("%.2f", clienteSeleccionado.getTotalGastado())
-                + "  ·  " + clienteSeleccionado.getAntiguedadTexto());
+                + "  ·  Gastado: $" + String.format("%.2f", clienteSeleccionado.getTotalGastado()));
 
         actualizandoPuntos = true;
         chkUsarPuntos.setSelected(false);
