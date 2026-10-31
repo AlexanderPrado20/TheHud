@@ -1,7 +1,11 @@
 package Vistas;
 
 import Conexion.BD;
+import Modelos.Cliente;
+import Modelos.ClienteRepository;
 import Modelos.GeneradorTicket;
+import Modelos.PuntosRepository;
+import Vistas.DialogoBuscarCliente;
 import Vistas.DialogoBuscarProducto;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -54,6 +58,26 @@ public class PanelVentas extends javax.swing.JPanel {
     // Grupo de botones de pago (fuera del código generado para que no se pierda al regenerar)
     private final javax.swing.ButtonGroup grupoPago = new javax.swing.ButtonGroup();
 
+    // ---- Sistema de fidelidad / puntos ----
+    private Cliente clienteSeleccionado = null;
+    private final ClienteRepository clienteRepo = new ClienteRepository();
+    private final PuntosRepository puntosRepo = new PuntosRepository();
+    private PuntosRepository.ConfigPuntos configPuntos = null;
+    private int puntosAUsar = 0;
+    private double descuentoPuntos = 0.0;
+    private int puntosAGanar = 0;
+    private boolean actualizandoPuntos = false;
+
+    // Componentes del panel de cliente (parte inferior, altura fija)
+    private javax.swing.JPanel panelClienteFidelidad;
+    private javax.swing.JLabel lblClienteNombre;
+    private javax.swing.JLabel lblClientePuntos;
+    private javax.swing.JLabel lblClienteCompras;
+    private javax.swing.JCheckBox chkUsarPuntos;
+    private javax.swing.JLabel lblDescuentoPuntos;
+    private javax.swing.JButton btnBuscarCliente;
+    private javax.swing.JButton btnQuitarCliente;
+
 
     public PanelVentas() {
         initComponents();
@@ -73,6 +97,10 @@ public class PanelVentas extends javax.swing.JPanel {
         configurarAtajos();
         configurarIconos();
         estilizarInterfaz();
+
+        // Sistema de fidelidad: configuración y panel inferior del cliente
+        configPuntos = puntosRepo.obtenerConfiguracion();
+        construirPanelClienteFidelidad();
     }
 
     // <editor-fold defaultstate="collapsed" desc="Logica del carrito">
@@ -291,7 +319,7 @@ public class PanelVentas extends javax.swing.JPanel {
             JOptionPane.showMessageDialog(this, "El carrito está vacío, no hay nada que cotizar.", "Carrito vacío", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        GeneradorTicket.generarCotizacion(copiarModelo(), obtenerTotal(), txtCliente.getText());
+        GeneradorTicket.generarCotizacion(copiarModelo(), obtenerTotalFinal(), txtCliente.getText());
     }
 
     private void reimprimirUltimoTicket() {
@@ -349,8 +377,9 @@ public class PanelVentas extends javax.swing.JPanel {
         lblCambio.setForeground(java.awt.Color.WHITE);
         txtPagaCon.setText("");
         txtCodigoBarras.setText("");
-        txtCliente.setText("");
         rbEfectivo.setSelected(true);
+        puntosAGanar = 0;
+        quitarCliente();
         limpiarVistaPrevia();
         txtCodigoBarras.requestFocus();
     }
@@ -638,8 +667,271 @@ public class PanelVentas extends javax.swing.JPanel {
     // </editor-fold>
 
     private void calcularTotal() {
-        lblTotal.setText(String.format("$ %.2f MXN", obtenerTotal()));
+        if (chkUsarPuntos != null && chkUsarPuntos.isSelected()) {
+            recalcularDescuentoPuntos();
+        }
+        lblTotal.setText(String.format("$ %.2f MXN", obtenerTotalFinal()));
     }
+
+    /** Total del carrito menos el descuento por puntos (nunca menor que cero). */
+    private double obtenerTotalFinal() {
+        double total = obtenerTotal() - descuentoPuntos;
+        return total < 0 ? 0 : total;
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="Sistema de fidelidad / puntos">
+
+    /**
+     * Construye el panel de cliente en la parte inferior. Se crea una sola vez
+     * y tiene altura fija, de modo que seleccionar un cliente NO mueve ni
+     * redimensiona la imagen ni el resto de la interfaz.
+     */
+    private void construirPanelClienteFidelidad() {
+        panelClienteFidelidad = new JPanel(new BorderLayout(14, 0));
+        panelClienteFidelidad.setOpaque(true);
+        panelClienteFidelidad.setBackground(new java.awt.Color(52, 55, 60));
+        panelClienteFidelidad.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(new java.awt.Color(74, 78, 84), 1),
+                javax.swing.BorderFactory.createEmptyBorder(9, 14, 9, 14)));
+        panelClienteFidelidad.setPreferredSize(new java.awt.Dimension(0, 86));
+        panelClienteFidelidad.setMinimumSize(new java.awt.Dimension(0, 86));
+        panelClienteFidelidad.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 86));
+
+        // El cliente ya no va en la cabecera superior: así la imagen no se desplaza.
+        panelCabecera.remove(panelCliente);
+
+        // Reutilizamos panelCliente (Cliente: [txtCliente]) y le agregamos los botones.
+        panelCliente.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
+        panelCliente.setOpaque(false);
+
+        lblCliente.setForeground(new java.awt.Color(160, 165, 170));
+        lblCliente.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+
+        txtCliente.setPreferredSize(new java.awt.Dimension(170, 30));
+        txtCliente.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13));
+        txtCliente.setToolTipText("Cliente para el ticket. Usa 'Buscar' para acumular puntos.");
+
+        btnBuscarCliente = new javax.swing.JButton("Buscar");
+        aplicarEstiloBoton(btnBuscarCliente, new java.awt.Color(14, 131, 136), java.awt.Color.WHITE);
+        btnBuscarCliente.setIcon(FontIcon.of(MaterialDesign.MDI_ACCOUNT_SEARCH, 15, java.awt.Color.WHITE));
+        btnBuscarCliente.setIconTextGap(5);
+        btnBuscarCliente.addActionListener(e -> buscarCliente());
+
+        btnQuitarCliente = new javax.swing.JButton("Quitar");
+        aplicarEstiloBoton(btnQuitarCliente, new java.awt.Color(63, 67, 73), java.awt.Color.WHITE);
+        btnQuitarCliente.setIcon(FontIcon.of(MaterialDesign.MDI_ACCOUNT_REMOVE, 15, java.awt.Color.WHITE));
+        btnQuitarCliente.setIconTextGap(5);
+        btnQuitarCliente.addActionListener(e -> quitarCliente());
+
+        panelCliente.add(btnBuscarCliente);
+        panelCliente.add(btnQuitarCliente);
+        panelClienteFidelidad.add(panelCliente, BorderLayout.WEST);
+
+        // Información del cliente: 3 líneas de altura fija.
+        JPanel panelInfo = new JPanel(new java.awt.GridLayout(3, 1, 0, 1));
+        panelInfo.setOpaque(false);
+
+        lblClienteNombre = new javax.swing.JLabel("Sin cliente seleccionado");
+        lblClienteNombre.setForeground(java.awt.Color.WHITE);
+        lblClienteNombre.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+
+        lblClientePuntos = new javax.swing.JLabel("0 pts disponibles");
+        lblClientePuntos.setForeground(new java.awt.Color(0, 230, 118));
+        lblClientePuntos.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+
+        lblClienteCompras = new javax.swing.JLabel("Compras: 0  ·  Gastado: $0.00");
+        lblClienteCompras.setForeground(new java.awt.Color(170, 175, 180));
+        lblClienteCompras.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 11));
+
+        panelInfo.add(lblClienteNombre);
+        panelInfo.add(lblClientePuntos);
+        panelInfo.add(lblClienteCompras);
+        panelClienteFidelidad.add(panelInfo, BorderLayout.CENTER);
+
+        // Controles de puntos.
+        JPanel panelPuntos = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 10, 0));
+        panelPuntos.setOpaque(false);
+
+        chkUsarPuntos = new javax.swing.JCheckBox("Usar puntos");
+        chkUsarPuntos.setOpaque(false);
+        chkUsarPuntos.setForeground(java.awt.Color.WHITE);
+        chkUsarPuntos.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        chkUsarPuntos.setEnabled(false);
+        chkUsarPuntos.addActionListener(e -> cambiarUsoPuntos());
+
+        lblDescuentoPuntos = new javax.swing.JLabel("");
+        lblDescuentoPuntos.setForeground(new java.awt.Color(0, 230, 118));
+        lblDescuentoPuntos.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+
+        panelPuntos.add(chkUsarPuntos);
+        panelPuntos.add(lblDescuentoPuntos);
+        panelClienteFidelidad.add(panelPuntos, BorderLayout.EAST);
+
+        // Se coloca en la zona izquierda, debajo del carrito y sus botones.
+        // Así la columna derecha (imagen y cobro) conserva su altura y no se
+        // desfasa al seleccionar un cliente.
+        panelIzquierdo.remove(panelBotonesInferior);
+
+        JPanel panelInferiorIzquierdo = new JPanel(new BorderLayout(0, 8));
+        panelInferiorIzquierdo.setOpaque(false);
+        panelInferiorIzquierdo.add(panelBotonesInferior, BorderLayout.CENTER);
+        panelInferiorIzquierdo.add(panelClienteFidelidad, BorderLayout.SOUTH);
+
+        panelIzquierdo.add(panelInferiorIzquierdo, java.awt.BorderLayout.SOUTH);
+
+        revalidate();
+        repaint();
+    }
+
+    private void buscarCliente() {
+        java.awt.Window ventana = javax.swing.SwingUtilities.getWindowAncestor(this);
+        java.awt.Frame owner = (ventana instanceof java.awt.Frame) ? (java.awt.Frame) ventana : null;
+        DialogoBuscarCliente dialogo = new DialogoBuscarCliente(owner, this::seleccionarCliente);
+        dialogo.setVisible(true);
+    }
+
+    /** Actualiza los datos del cliente sin cambiar el tamaño de ningún panel. */
+    private void seleccionarCliente(Cliente cliente) {
+        if (cliente == null) {
+            quitarCliente();
+            return;
+        }
+
+        // Se recarga desde la BD para traer puntos y compras actualizados.
+        Cliente actualizado = clienteRepo.buscarPorId(cliente.getIdCliente());
+        clienteSeleccionado = (actualizado != null) ? actualizado : cliente;
+
+        txtCliente.setText(clienteSeleccionado.getNombre());
+        lblClienteNombre.setText(clienteSeleccionado.getNombre());
+        lblClientePuntos.setText(clienteSeleccionado.getSaldoPuntos() + " pts disponibles");
+        lblClienteCompras.setText("Compras: " + clienteSeleccionado.getTotalCompras()
+                + "  ·  Gastado: $" + String.format("%.2f", clienteSeleccionado.getTotalGastado())
+                + "  ·  " + clienteSeleccionado.getAntiguedadTexto());
+
+        actualizandoPuntos = true;
+        chkUsarPuntos.setSelected(false);
+        actualizandoPuntos = false;
+        chkUsarPuntos.setEnabled(clienteSeleccionado.getSaldoPuntos() >= configPuntos.minimoCanje);
+
+        puntosAUsar = 0;
+        descuentoPuntos = 0;
+        lblDescuentoPuntos.setText("");
+        lblTotal.setText(String.format("$ %.2f MXN", obtenerTotalFinal()));
+    }
+
+    private void quitarCliente() {
+        clienteSeleccionado = null;
+        txtCliente.setText("");
+        if (lblClienteNombre != null) {
+            lblClienteNombre.setText("Sin cliente seleccionado");
+        }
+        if (lblClientePuntos != null) {
+            lblClientePuntos.setText("0 pts disponibles");
+        }
+        if (lblClienteCompras != null) {
+            lblClienteCompras.setText("Compras: 0  ·  Gastado: $0.00");
+        }
+        if (chkUsarPuntos != null) {
+            actualizandoPuntos = true;
+            chkUsarPuntos.setSelected(false);
+            chkUsarPuntos.setEnabled(false);
+            actualizandoPuntos = false;
+        }
+        puntosAUsar = 0;
+        descuentoPuntos = 0;
+        if (lblDescuentoPuntos != null) {
+            lblDescuentoPuntos.setText("");
+        }
+        if (lblTotal != null) {
+            lblTotal.setText(String.format("$ %.2f MXN", obtenerTotalFinal()));
+        }
+    }
+
+    private void cambiarUsoPuntos() {
+        if (actualizandoPuntos) {
+            return;
+        }
+        if (chkUsarPuntos.isSelected()) {
+            if (clienteSeleccionado == null) {
+                actualizandoPuntos = true;
+                chkUsarPuntos.setSelected(false);
+                actualizandoPuntos = false;
+                JOptionPane.showMessageDialog(this, "Primero selecciona un cliente.", "Puntos", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            recalcularDescuentoPuntos();
+            if (puntosAUsar < configPuntos.minimoCanje) {
+                actualizandoPuntos = true;
+                chkUsarPuntos.setSelected(false);
+                actualizandoPuntos = false;
+                descuentoPuntos = 0;
+                puntosAUsar = 0;
+                lblDescuentoPuntos.setText("");
+                JOptionPane.showMessageDialog(this,
+                        "No hay puntos suficientes para canjear.\n"
+                        + "Mínimo: " + configPuntos.minimoCanje + " puntos.\n"
+                        + "Saldo: " + clienteSeleccionado.getSaldoPuntos() + " puntos.",
+                        "Puntos insuficientes", JOptionPane.WARNING_MESSAGE);
+            }
+        } else {
+            puntosAUsar = 0;
+            descuentoPuntos = 0;
+            lblDescuentoPuntos.setText("");
+        }
+        lblTotal.setText(String.format("$ %.2f MXN", obtenerTotalFinal()));
+    }
+
+    /** Calcula el máximo de puntos canjeables para el total actual. */
+    private void recalcularDescuentoPuntos() {
+        if (clienteSeleccionado == null || configPuntos == null) {
+            puntosAUsar = 0;
+            descuentoPuntos = 0;
+            if (lblDescuentoPuntos != null) {
+                lblDescuentoPuntos.setText("");
+            }
+            return;
+        }
+
+        double total = obtenerTotal();
+        int saldo = clienteSeleccionado.getSaldoPuntos();
+
+        if (total <= 0 || saldo < configPuntos.minimoCanje) {
+            puntosAUsar = 0;
+            descuentoPuntos = 0;
+            if (lblDescuentoPuntos != null) {
+                lblDescuentoPuntos.setText("");
+            }
+            return;
+        }
+
+        int maxPorTotal = (int) Math.floor(total / configPuntos.valorPunto);
+        int puntos = Math.min(saldo, maxPorTotal);
+
+        if (puntos < configPuntos.minimoCanje) {
+            puntosAUsar = 0;
+            descuentoPuntos = 0;
+            if (lblDescuentoPuntos != null) {
+                lblDescuentoPuntos.setText("");
+            }
+            return;
+        }
+
+        double descuento = puntos * configPuntos.valorPunto;
+        double maxDescuento = total * (configPuntos.maxPorcentajeCanje / 100.0);
+        if (descuento > maxDescuento) {
+            descuento = maxDescuento;
+            puntos = (int) Math.floor(descuento / configPuntos.valorPunto);
+        }
+
+        puntosAUsar = puntos;
+        descuentoPuntos = descuento;
+        if (lblDescuentoPuntos != null) {
+            lblDescuentoPuntos.setText("- $" + String.format("%.2f", descuentoPuntos)
+                    + "  (" + puntosAUsar + " pts)");
+        }
+    }
+
+    // </editor-fold>
 
     private JPanel crearPanelVistaPrevia() {
         pnlpre = new JPanel(new BorderLayout(5, 5));
@@ -1089,7 +1381,7 @@ public class PanelVentas extends javax.swing.JPanel {
             return;
         }
 
-        double total = obtenerTotal();
+        double total = obtenerTotalFinal();
         double pagaCon;
         String txtPago = txtPagaCon.getText().trim().replace(",", ".");
         if (txtPago.isEmpty()) {
@@ -1113,9 +1405,21 @@ public class PanelVentas extends javax.swing.JPanel {
         String metodoPago = rbEfectivo.isSelected() ? "Efectivo" : "Tarjeta";
         String cliente = txtCliente.getText().trim();
 
-        int confirmar = JOptionPane.showConfirmDialog(this,
-            String.format("¿Confirmar venta?\n\nTotal: $%.2f\nMétodo de pago: %s\nRecibe: $%.2f\nCambio: $%.2f",
-                total, metodoPago, pagaCon, cambio),
+        int puntosPreview = (clienteSeleccionado != null) ? puntosRepo.calcularPuntosGanados(total) : 0;
+
+        StringBuilder resumen = new StringBuilder();
+        resumen.append(String.format("¿Confirmar venta?\n\nTotal: $%.2f\nMétodo de pago: %s\nRecibe: $%.2f\nCambio: $%.2f",
+                total, metodoPago, pagaCon, cambio));
+        if (clienteSeleccionado != null) {
+            resumen.append("\n\nCliente: ").append(clienteSeleccionado.getNombre());
+            if (puntosAUsar > 0) {
+                resumen.append("\nPuntos usados: ").append(puntosAUsar)
+                        .append("  (-$").append(String.format("%.2f", descuentoPuntos)).append(")");
+            }
+            resumen.append("\nPuntos que ganará: ").append(puntosPreview);
+        }
+
+        int confirmar = JOptionPane.showConfirmDialog(this, resumen.toString(),
             "Confirmar Venta", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (confirmar != JOptionPane.YES_OPTION) {
             return;
@@ -1194,6 +1498,13 @@ public class PanelVentas extends javax.swing.JPanel {
                 psStock.executeUpdate();
             }
 
+            // 3. Registrar los puntos del cliente (si hay cliente seleccionado)
+            if (clienteSeleccionado != null) {
+                puntosAGanar = puntosRepo.calcularPuntosGanados(total);
+                puntosRepo.registrarVentaConPuntos(con, idVenta, clienteSeleccionado.getIdCliente(),
+                        puntosAUsar, descuentoPuntos, puntosAGanar, 0);
+            }
+
             con.commit(); // Confirmar transacción
 
             // Guardar datos del ticket para poder reimprimirlo después
@@ -1207,9 +1518,15 @@ public class PanelVentas extends javax.swing.JPanel {
 
             GeneradorTicket.imprimirTicket(idVenta, modeloTabla, total, pagaCon, cambio, metodoPago, cliente);
 
+            int puntosGanadosVenta = puntosAGanar;
+
             limpiarPantalla();
 
-            JOptionPane.showMessageDialog(this, "¡Venta realizada con éxito!\nCambio: $" + String.format("%.2f", cambio));
+            String mensajeExito = "¡Venta realizada con éxito!\nCambio: $" + String.format("%.2f", cambio);
+            if (puntosGanadosVenta > 0) {
+                mensajeExito += "\nPuntos ganados: " + puntosGanadosVenta;
+            }
+            JOptionPane.showMessageDialog(this, mensajeExito);
 
         } catch (Exception e) {
             if (con != null) {
@@ -1226,7 +1543,7 @@ public class PanelVentas extends javax.swing.JPanel {
     private void txtPagaConActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPagaConActionPerformed
 
         try {
-            double total = obtenerTotal();
+            double total = obtenerTotalFinal();
             double pagaCon = Double.parseDouble(txtPagaCon.getText().trim().replace(",", "."));
             actualizarCambio(pagaCon - total);
         } catch (NumberFormatException e) {

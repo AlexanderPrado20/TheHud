@@ -32,6 +32,9 @@ public class FrmLogin extends javax.swing.JFrame {
     private javax.swing.JPanel panelMarca;
     private javax.swing.JPanel panelLogin;
 
+    /** Evita que un doble Enter/clic abra dos veces el menú principal. */
+    private boolean ingresando = false;
+
     /** Creates new form FrmLogin */
     public FrmLogin() {
         initComponents();
@@ -45,10 +48,9 @@ public class FrmLogin extends javax.swing.JFrame {
         setResizable(false);
         setTitle("The Fitness Fuel Hub - Iniciar sesión");
 
-        // Enter en cualquier campo dispara el ingreso
-        java.awt.event.ActionListener enter = e -> btnIngresarActionPerformed(null);
-        txtUsuario.addActionListener(enter);
-        txtPassword.addActionListener(enter);
+        // Enter en cualquier campo dispara el ingreso.
+        // NOTA: los listeners de Enter ya se registran en initComponents();
+        // no se agregan aquí para evitar que el login se ejecute dos veces.
 
         // Iconos
         btnIngresar.setIcon(FontIcon.of(MaterialDesign.MDI_LOGIN, 18, java.awt.Color.WHITE));
@@ -68,43 +70,57 @@ public class FrmLogin extends javax.swing.JFrame {
     }
 
     private void btnIngresarActionPerformed(java.awt.event.ActionEvent evt) {
-        String usuario = txtUsuario.getText().trim();
-        String password = new String(txtPassword.getPassword());
-
-        if (usuario.isEmpty() || password.isEmpty()) {
-            mostrarMensaje("Por favor, llena todos los campos.", true);
+        // Un doble Enter/clic no debe abrir dos veces el menú principal.
+        if (ingresando) {
             return;
         }
+        ingresando = true;
+        boolean exito = false;
 
-        java.sql.Connection con = BD.getConexion();
-        if (con == null) {
-            mostrarMensaje("No se pudo conectar con la base de datos.", true);
-            return;
-        }
+        try {
+            String usuario = txtUsuario.getText().trim();
+            String password = new String(txtPassword.getPassword());
 
-        String sql = "SELECT rol FROM usuarios WHERE usuario = ? AND password = ?";
-        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, usuario);
-            ps.setString(2, password);
+            if (usuario.isEmpty() || password.isEmpty()) {
+                mostrarMensaje("Por favor, llena todos los campos.", true);
+                return;
+            }
 
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    String rol = rs.getString("rol");
-                    FrmMenuPrnciapal principal = new FrmMenuPrnciapal(usuario, rol);
-                    principal.setVisible(true);
-                    dispose();
-                } else {
-                    mostrarMensaje("Usuario o contraseña incorrectos.", true);
-                    txtPassword.setText("");
-                    txtPassword.requestFocusInWindow();
+            java.sql.Connection con = BD.getConexion();
+            if (con == null) {
+                mostrarMensaje("No se pudo conectar con la base de datos.", true);
+                return;
+            }
+
+            String sql = "SELECT rol FROM usuarios WHERE usuario = ? AND password = ?";
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, usuario);
+                ps.setString(2, password);
+
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String rol = rs.getString("rol");
+                        FrmMenuPrnciapal principal = new FrmMenuPrnciapal(usuario, rol);
+                        principal.setVisible(true);
+                        exito = true;
+                        dispose();
+                    } else {
+                        mostrarMensaje("Usuario o contraseña incorrectos.", true);
+                        txtPassword.setText("");
+                        txtPassword.requestFocusInWindow();
+                    }
+                }
+            } finally {
+                try {
+                    con.close();
+                } catch (java.sql.SQLException ignored) {
                 }
             }
         } catch (java.sql.SQLException e) {
             mostrarMensaje("Error al conectar: " + e.getMessage(), true);
         } finally {
-            try {
-                con.close();
-            } catch (java.sql.SQLException ignored) {
+            if (!exito) {
+                ingresando = false;
             }
         }
     }
