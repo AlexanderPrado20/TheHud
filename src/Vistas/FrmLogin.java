@@ -4,8 +4,33 @@ import Conexion.BD;
 import org.kordamp.ikonli.materialdesign.MaterialDesign;
 import org.kordamp.ikonli.swing.FontIcon;
 
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 
 public class FrmLogin extends javax.swing.JFrame {
+
+    private static final Color BG_DARK = new Color(18, 20, 24);
+    private static final Color BG_PANEL = new Color(28, 32, 38);
+    private static final Color ACCENT = new Color(14, 131, 136);
+    private static final Color ACCENT_HOVER = new Color(20, 160, 165);
+    private static final Color TEXT_PRIMARY = new Color(240, 240, 240);
+    private static final Color TEXT_SECONDARY = new Color(160, 165, 170);
+    private static final Color BORDER_COLOR = new Color(60, 65, 70);
+
+    private javax.swing.JLabel lblLogo;
+    private javax.swing.JLabel lblTitulo;
+    private javax.swing.JLabel lblSlogan;
+    private javax.swing.JLabel lblBienvenida;
+    private javax.swing.JLabel lblUsuario;
+    private javax.swing.JTextField txtUsuario;
+    private javax.swing.JLabel lblPassword;
+    private javax.swing.JPasswordField txtPassword;
+    private javax.swing.JLabel lblMensaje;
+    private javax.swing.JButton btnIngresar;
+    private javax.swing.JPanel panelMarca;
+    private javax.swing.JPanel panelLogin;
 
     /** Creates new form FrmLogin */
     public FrmLogin() {
@@ -15,7 +40,7 @@ public class FrmLogin extends javax.swing.JFrame {
 
     private void configurarUI() {
         pack();
-        setSize(820, 480);
+        setSize(920, 520);
         setLocationRelativeTo(null);
         setResizable(false);
         setTitle("The Fitness Fuel Hub - Iniciar sesión");
@@ -25,10 +50,10 @@ public class FrmLogin extends javax.swing.JFrame {
         txtUsuario.addActionListener(enter);
         txtPassword.addActionListener(enter);
 
-        // Íconos (se aplican aquí para que no se pierdan al regenerar el formulario)
+        // Iconos
         btnIngresar.setIcon(FontIcon.of(MaterialDesign.MDI_LOGIN, 18, java.awt.Color.WHITE));
-        lblUsuario.setIcon(FontIcon.of(MaterialDesign.MDI_ACCOUNT, 14, new java.awt.Color(160, 160, 160)));
-        lblPassword.setIcon(FontIcon.of(MaterialDesign.MDI_LOCK, 14, new java.awt.Color(160, 160, 160)));
+        lblUsuario.setIcon(FontIcon.of(MaterialDesign.MDI_ACCOUNT, 14, TEXT_SECONDARY));
+        lblPassword.setIcon(FontIcon.of(MaterialDesign.MDI_LOCK, 14, TEXT_SECONDARY));
 
         txtUsuario.putClientProperty("JTextField.placeholderText", "Ingresa tu usuario");
         txtPassword.putClientProperty("JTextField.placeholderText", "Ingresa tu contraseña");
@@ -37,7 +62,6 @@ public class FrmLogin extends javax.swing.JFrame {
         try {
             setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Imagenes/Logo (2).png")).getImage());
         } catch (Exception ignored) {
-            // Si no está el logo, se ignora
         }
 
         txtUsuario.requestFocusInWindow();
@@ -93,163 +117,259 @@ public class FrmLogin extends javax.swing.JFrame {
     }
 
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        panelMarca = new javax.swing.JPanel();
-        lblLogo = new javax.swing.JLabel();
-        lblTitulo = new javax.swing.JLabel();
-        lblSlogan = new javax.swing.JLabel();
-        panelLogin = new javax.swing.JPanel();
-        lblBienvenida = new javax.swing.JLabel();
-        lblUsuario = new javax.swing.JLabel();
-        txtUsuario = new javax.swing.JTextField();
-        lblPassword = new javax.swing.JLabel();
-        txtPassword = new javax.swing.JPasswordField();
-        lblMensaje = new javax.swing.JLabel();
-        btnIngresar = new javax.swing.JButton();
+        // Panel principal con fondo oscuro
+        getContentPane().setBackground(BG_DARK);
+        setLayout(new BorderLayout());
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        // Panel izquierdo - marca/gym
+        panelMarca = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Gradiente oscuro
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(10, 12, 16),
+                    0, getHeight(), new Color(25, 30, 38)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Líneas decorativas (efecto gym)
+                g2d.setColor(new Color(ACCENT.getRed(), ACCENT.getGreen(), ACCENT.getBlue(), 30));
+                g2d.setStroke(new BasicStroke(1));
+                for (int i = 0; i < getWidth(); i += 40) {
+                    g2d.drawLine(i, 0, i, getHeight());
+                }
+                for (int i = 0; i < getHeight(); i += 40) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
+                
+                // Efecto de brillo
+                g2d.setColor(new Color(255, 255, 255, 8));
+                g2d.fillOval(getWidth() - 100, -50, 200, 200);
+            }
+        };
+        panelMarca.setPreferredSize(new Dimension(360, 0));
+        panelMarca.setLayout(new GridBagLayout());
 
-        panelMarca.setBackground(new java.awt.Color(14, 131, 136));
+        // Logo Login
+        lblLogo = new JLabel();
+        lblLogo.setHorizontalAlignment(SwingConstants.CENTER);
+        try {
+            java.awt.Image img = new javax.swing.ImageIcon(getClass().getResource("/Imagenes/LogoLogin.png")).getImage();
+            java.awt.Image scaled = img.getScaledInstance(180, 180, java.awt.Image.SCALE_SMOOTH);
+            lblLogo.setIcon(new javax.swing.ImageIcon(scaled));
+        } catch (Exception ignored) {}
 
-        lblLogo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblLogo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Imagenes/Logo (2).png"))); // NOI18N
+        // Título
+        lblTitulo = new JLabel("THE FITNESS FUEL HUB");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitulo.setForeground(Color.WHITE);
+        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
 
-        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
-        lblTitulo.setForeground(new java.awt.Color(255, 255, 255));
-        lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblTitulo.setText("THE FITNESS FUEL HUB");
+        // Slogan
+        lblSlogan = new JLabel("Sistema de Punto de Venta");
+        lblSlogan.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblSlogan.setForeground(new Color(180, 200, 200));
+        lblSlogan.setHorizontalAlignment(SwingConstants.CENTER);
 
-        lblSlogan.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        lblSlogan.setForeground(new java.awt.Color(214, 240, 240));
-        lblSlogan.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblSlogan.setText("Sistema de Punto de Venta");
+        // Subtítulo
+        JLabel lblSubtitulo = new JLabel("Gestión de suplementos y nutrición");
+        lblSubtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblSubtitulo.setForeground(new Color(120, 140, 140));
+        lblSubtitulo.setHorizontalAlignment(SwingConstants.CENTER);
 
-        javax.swing.GroupLayout panelMarcaLayout = new javax.swing.GroupLayout(panelMarca);
-        panelMarca.setLayout(panelMarcaLayout);
-        panelMarcaLayout.setHorizontalGroup(
-            panelMarcaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelMarcaLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(panelMarcaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblLogo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(lblTitulo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(lblSlogan, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
-        );
-        panelMarcaLayout.setVerticalGroup(
-            panelMarcaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelMarcaLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(lblLogo)
-                .addGap(18, 18, 18)
-                .addComponent(lblTitulo)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(lblSlogan)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        // Panel de marca (layout)
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weighty = 1;
+        gbc.anchor = GridBagConstraints.CENTER;
+        panelMarca.add(lblLogo, gbc);
 
-        lblBienvenida.setFont(new java.awt.Font("Segoe UI", 1, 26)); // NOI18N
-        lblBienvenida.setText("Iniciar sesión");
+        gbc.gridy = 1;
+        gbc.weighty = 0;
+        gbc.insets = new Insets(10, 0, 0, 0);
+        panelMarca.add(lblTitulo, gbc);
 
-        lblUsuario.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
-        lblUsuario.setText("  Usuario");
+        gbc.gridy = 2;
+        gbc.insets = new Insets(4, 0, 0, 0);
+        panelMarca.add(lblSlogan, gbc);
 
-        txtUsuario.setFont(new java.awt.Font("Segoe UI", 0, 15)); // NOI18N
+        gbc.gridy = 3;
+        gbc.insets = new Insets(2, 0, 0, 0);
+        panelMarca.add(lblSubtitulo, gbc);
 
-        lblPassword.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
-        lblPassword.setText("  Contraseña");
+        // Panel derecho - login
+        panelLogin = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Fondo oscuro con gradiente
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(22, 26, 32),
+                    0, getHeight(), new Color(30, 35, 42)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        panelLogin.setLayout(new GridBagLayout());
 
-        txtPassword.setFont(new java.awt.Font("Segoe UI", 0, 15)); // NOI18N
+        // Card de login (efecto glassmorphism)
+        JPanel cardLogin = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Fondo semi-transparente
+                g2d.setColor(new Color(40, 45, 52, 200));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                
+                // Borde sutil
+                g2d.setColor(new Color(80, 85, 90, 100));
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+            }
+        };
+        cardLogin.setOpaque(false);
+        cardLogin.setLayout(new BoxLayout(cardLogin, BoxLayout.Y_AXIS));
+        cardLogin.setBorder(new EmptyBorder(40, 50, 40, 50));
+        cardLogin.setPreferredSize(new Dimension(400, 380));
 
-        lblMensaje.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
-        lblMensaje.setText(" ");
+        // Bienvenida
+        lblBienvenida = new JLabel("Bienvenido");
+        lblBienvenida.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblBienvenida.setForeground(TEXT_PRIMARY);
+        lblBienvenida.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        btnIngresar.setBackground(new java.awt.Color(14, 131, 136));
-        btnIngresar.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
-        btnIngresar.setForeground(new java.awt.Color(255, 255, 255));
-        btnIngresar.setText("Ingresar");
-        btnIngresar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnIngresarActionPerformed(evt);
+        JLabel lblSub = new JLabel("Inicia sesión para continuar");
+        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblSub.setForeground(TEXT_SECONDARY);
+        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Usuario
+        lblUsuario = new JLabel("  Usuario");
+        lblUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblUsuario.setForeground(TEXT_SECONDARY);
+        lblUsuario.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        txtUsuario = new JTextField();
+        txtUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        txtUsuario.setBackground(new Color(35, 40, 46));
+        txtUsuario.setForeground(TEXT_PRIMARY);
+        txtUsuario.setCaretColor(ACCENT);
+        txtUsuario.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER_COLOR, 1),
+            BorderFactory.createEmptyBorder(10, 14, 10, 14)
+        ));
+        txtUsuario.setMaximumSize(new Dimension(300, 42));
+        txtUsuario.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Contraseña
+        lblPassword = new JLabel("  Contraseña");
+        lblPassword.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblPassword.setForeground(TEXT_SECONDARY);
+        lblPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        txtPassword = new JPasswordField();
+        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        txtPassword.setBackground(new Color(35, 40, 46));
+        txtPassword.setForeground(TEXT_PRIMARY);
+        txtPassword.setCaretColor(ACCENT);
+        txtPassword.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER_COLOR, 1),
+            BorderFactory.createEmptyBorder(10, 14, 10, 14)
+        ));
+        txtPassword.setMaximumSize(new Dimension(300, 42));
+        txtPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Mensaje
+        lblMensaje = new JLabel(" ");
+        lblMensaje.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblMensaje.setForeground(new Color(255, 120, 120));
+        lblMensaje.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Botón ingresar
+        btnIngresar = new JButton("Ingresar");
+        btnIngresar.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        btnIngresar.setBackground(ACCENT);
+        btnIngresar.setForeground(Color.WHITE);
+        btnIngresar.setFocusPainted(false);
+        btnIngresar.setBorderPainted(false);
+        btnIngresar.setOpaque(true);
+        btnIngresar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnIngresar.setMaximumSize(new Dimension(300, 44));
+        btnIngresar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnIngresar.addActionListener(e -> btnIngresarActionPerformed(null));
+
+        // Hover effect para el botón
+        btnIngresar.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnIngresar.setBackground(ACCENT_HOVER);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnIngresar.setBackground(ACCENT);
             }
         });
 
-        javax.swing.GroupLayout panelLoginLayout = new javax.swing.GroupLayout(panelLogin);
-        panelLogin.setLayout(panelLoginLayout);
-        panelLoginLayout.setHorizontalGroup(
-            panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelLoginLayout.createSequentialGroup()
-                .addGap(60, 60, 60)
-                .addGroup(panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblBienvenida)
-                    .addComponent(lblUsuario)
-                    .addComponent(lblPassword)
-                    .addComponent(lblMensaje)
-                    .addComponent(txtUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, 320, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 320, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 320, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(60, 60, 60))
-        );
-        panelLoginLayout.setVerticalGroup(
-            panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelLoginLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(lblBienvenida)
-                .addGap(24, 24, 24)
-                .addComponent(lblUsuario)
-                .addGap(6, 6, 6)
-                .addComponent(txtUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(16, 16, 16)
-                .addComponent(lblPassword)
-                .addGap(6, 6, 6)
-                .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(12, 12, 12)
-                .addComponent(lblMensaje)
-                .addGap(18, 18, 18)
-                .addComponent(btnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        // Agregar componentes al card
+        cardLogin.add(lblBienvenida);
+        cardLogin.add(Box.createVerticalStrut(4));
+        cardLogin.add(lblSub);
+        cardLogin.add(Box.createVerticalStrut(30));
+        cardLogin.add(lblUsuario);
+        cardLogin.add(Box.createVerticalStrut(6));
+        cardLogin.add(txtUsuario);
+        cardLogin.add(Box.createVerticalStrut(16));
+        cardLogin.add(lblPassword);
+        cardLogin.add(Box.createVerticalStrut(6));
+        cardLogin.add(txtPassword);
+        cardLogin.add(Box.createVerticalStrut(12));
+        cardLogin.add(lblMensaje);
+        cardLogin.add(Box.createVerticalStrut(18));
+        cardLogin.add(btnIngresar);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(panelMarca, javax.swing.GroupLayout.PREFERRED_SIZE, 320, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addComponent(panelLogin, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(panelMarca, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addComponent(panelLogin, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
+        // Agregar card al panel de login
+        GridBagConstraints gbcLogin = new GridBagConstraints();
+        gbcLogin.gridx = 0;
+        gbcLogin.gridy = 0;
+        gbcLogin.weightx = 1;
+        gbcLogin.weighty = 1;
+        gbcLogin.anchor = GridBagConstraints.CENTER;
+        panelLogin.add(cardLogin, gbcLogin);
 
-        pack();
-    }// </editor-fold>//GEN-END:initComponents
+        // Layout principal
+        getContentPane().setLayout(new BorderLayout());
+        getContentPane().add(panelMarca, BorderLayout.WEST);
+        getContentPane().add(panelLogin, BorderLayout.CENTER);
 
-    /**
-     * @param args the command line arguments
-     */
+        // Icono de la ventana
+        try {
+            setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Imagenes/Logo (2).png")).getImage());
+        } catch (Exception ignored) {
+        }
+
+        // Teclas Enter
+        txtUsuario.addActionListener(e -> btnIngresarActionPerformed(null));
+        txtPassword.addActionListener(e -> btnIngresarActionPerformed(null));
+
+        txtUsuario.requestFocusInWindow();
+    }
+
     public static void main(String args[]) {
         Tema.aplicar();
 
         java.awt.EventQueue.invokeLater(() -> new FrmLogin().setVisible(true));
     }
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnIngresar;
-    private javax.swing.JLabel lblBienvenida;
-    private javax.swing.JLabel lblLogo;
-    private javax.swing.JLabel lblMensaje;
-    private javax.swing.JLabel lblPassword;
-    private javax.swing.JLabel lblSlogan;
-    private javax.swing.JLabel lblTitulo;
-    private javax.swing.JLabel lblUsuario;
-    private javax.swing.JPanel panelLogin;
-    private javax.swing.JPanel panelMarca;
-    private javax.swing.JPasswordField txtPassword;
-    private javax.swing.JTextField txtUsuario;
-    // End of variables declaration//GEN-END:variables
 }

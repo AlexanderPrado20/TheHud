@@ -1,4 +1,4 @@
-package vistas;
+package Vistas;
 
 import Conexion.BD;
 import Modelos.GeneradorTicket;

@@ -6,10 +6,10 @@ import java.sql.SQLException;
 
 public class BD {
 
-    // URL con parámetros obligatorios para MySQL 8.0+
-    private static final String URL = "jdbc:mysql://localhost:3306/tienda_suplementos?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-    private static final String USER = "root";
-    private static final String PASSWORD = "12345";
+    // URL con parámetros obligatorios para MySQL 8.0+ (servidor remoto)
+    private static final String URL = "jdbc:mysql://192.168.1.22:3306/tienda_suplementos?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+    private static final String USER = "app_user";
+    private static final String PASSWORD = "password_seguro";
 
     public static Connection getConexion() {
         Connection con = null;
