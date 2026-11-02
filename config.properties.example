@@ -1,0 +1,14 @@
+# ============================================================
+# Ejemplo de configuración de conexión para TheFHud.
+#
+# Copia este archivo como config.properties y ajusta los valores:
+#   - En Windows:  copy config.properties.example config.properties
+#   - En Linux/Mac: cp config.properties.example config.properties
+#
+# El archivo config.properties NO se sube a Git (está en .gitignore).
+# ============================================================
+db.host=192.168.1.22
+db.port=3306
+db.name=tienda_suplementos
+db.user=app_user
+db.password=password_seguro

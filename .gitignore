@@ -6,6 +6,9 @@
 # Clases compiladas sueltas
 *.class
 
+# Configuración local (contiene credenciales)
+/config.properties
+
 # Sistema
 .DS_Store
 Thumbs.db
