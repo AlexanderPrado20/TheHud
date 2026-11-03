@@ -24,7 +24,8 @@ import java.util.Properties;
  */
 public class BD {
 
-    private static final String DEFAULT_HOST = "192.168.1.22";
+    // IP actual de la VM. Se puede cambiar sin recompilar en config.properties.
+    private static final String DEFAULT_HOST = "192.168.10.216";
     private static final int DEFAULT_PORT = 3306;
     private static final String DEFAULT_DB = "tienda_suplementos";
     private static final String DEFAULT_USER = "app_user";
