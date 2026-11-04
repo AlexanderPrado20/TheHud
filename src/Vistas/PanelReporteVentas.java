@@ -13,10 +13,8 @@ import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.Shape;
-import java.awt.Window;
 import java.awt.geom.RoundRectangle2D;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,15 +29,21 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import org.kordamp.ikonli.materialdesign.MaterialDesign;
@@ -50,8 +54,10 @@ import org.kordamp.ikonli.swing.FontIcon;
  * "Monster" que se llena según la meta diaria.
  *
  * <p>Incluye tres vistas: ventas de hoy por hora, del mes por día y el
- * histórico general por mes. Se refresca automáticamente cada 30 segundos
- * mientras el panel está visible.</p>
+ * histórico general por mes. Al seleccionar una fila, el panel inferior
+ * muestra el desglose de productos vendidos (fecha, cliente, producto,
+ * marca, cantidad, precio, subtotal). Se refresca automáticamente cada
+ * 30 segundos mientras el panel está visible.</p>
  */
 public class PanelReporteVentas extends javax.swing.JPanel {
 
@@ -72,6 +78,10 @@ public class PanelReporteVentas extends javax.swing.JPanel {
     private final DefaultTableModel[] modelos = new DefaultTableModel[3];
     private final JLabel[] resumenes = new JLabel[3];
 
+    private JTable tablaDetalle;
+    private DefaultTableModel modeloDetalle;
+    private JLabel lblDetalleResumen;
+
     private final JTextField txtMeta = new JTextField(8);
     private final JLabel lblActualizado = new JLabel("--:--:--");
     private final MonsterCan lata = new MonsterCan();
@@ -83,6 +93,7 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         setBackground(FONDO);
 
         construirInterfaz();
+        anadirListenersTablas();
         cargarMeta();
         refrescar();
 
@@ -162,6 +173,11 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         estilizarBoton(btnExportar, new Color(90, 94, 98));
         btnExportar.addActionListener(e -> exportarCsv());
 
+        JButton btnExportarDetalle = new JButton("Exportar detalle");
+        btnExportarDetalle.setIcon(FontIcon.of(MaterialDesign.MDI_DOWNLOAD, 15, Color.WHITE));
+        estilizarBoton(btnExportarDetalle, new Color(90, 94, 98));
+        btnExportarDetalle.addActionListener(e -> exportarDetalleCsv());
+
         JButton btnActualizar = new JButton("Actualizar");
         btnActualizar.setIcon(FontIcon.of(MaterialDesign.MDI_REFRESH, 15, Color.WHITE));
         estilizarBoton(btnActualizar, new Color(0, 150, 100));
@@ -174,6 +190,7 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         acciones.add(txtMeta);
         acciones.add(btnMeta);
         acciones.add(btnExportar);
+        acciones.add(btnExportarDetalle);
         acciones.add(btnActualizar);
         acciones.add(lblActualizado);
 
@@ -182,12 +199,12 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         return cabecera;
     }
 
-    private JPanel crearCuerpo() {
-        JPanel cuerpo = new JPanel(new BorderLayout(16, 0));
-        cuerpo.setBackground(FONDO);
-        cuerpo.setBorder(BorderFactory.createEmptyBorder(14, 18, 16, 18));
+    private JComponent crearCuerpo() {
+        // --- Panel superior: pestañas ---
+        JPanel panPestanas = new JPanel(new BorderLayout());
+        panPestanas.setBackground(FONDO);
+        panPestanas.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
-        // ---- Pestañas con tablas tipo Excel ----
         modelos[0] = crearModelo(new String[]{"Hora", "Ventas", "Total", "Ticket promedio"});
         modelos[1] = crearModelo(new String[]{"Fecha", "Ventas", "Total", "Ticket promedio"});
         modelos[2] = crearModelo(new String[]{"Periodo", "Ventas", "Total", "Ticket promedio"});
@@ -206,9 +223,45 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         tabs.putClientProperty("JTabbedPane.tabSelectionHeight", 3);
         tabs.addChangeListener(e -> actualizarResumenPestana());
 
-        cuerpo.add(tabs, BorderLayout.CENTER);
-        cuerpo.add(crearPanelLateral(), BorderLayout.EAST);
-        return cuerpo;
+        panPestanas.add(tabs, BorderLayout.CENTER);
+
+        // --- Panel inferior: detalle de la fila seleccionada ---
+        modeloDetalle = new DefaultTableModel(
+                new String[]{"Fecha", "Cliente", "Producto", "Marca", "Cantidad", "Precio", "Subtotal"}, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+        tablaDetalle = new JTable(modeloDetalle);
+        estilizarTablaDetalle(tablaDetalle);
+        JScrollPane scrollDetalle = new JScrollPane(tablaDetalle);
+        scrollDetalle.getViewport().setBackground(TARJETA);
+        scrollDetalle.setBorder(BorderFactory.createLineBorder(BORDE));
+
+        lblDetalleResumen = new JLabel("Selecciona una fila para ver el desglose");
+        lblDetalleResumen.setForeground(TEXTO_SUAVE);
+        lblDetalleResumen.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblDetalleResumen.setBorder(BorderFactory.createEmptyBorder(4, 2, 0, 0));
+
+        JPanel panelDetalle = new JPanel(new BorderLayout(4, 4));
+        panelDetalle.setBackground(FONDO);
+        panelDetalle.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDE, 1, true),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+        panelDetalle.add(new JLabel("Desglose de venta"), BorderLayout.NORTH);
+        panelDetalle.add(scrollDetalle, BorderLayout.CENTER);
+        panelDetalle.add(lblDetalleResumen, BorderLayout.SOUTH);
+
+        // --- Splitter vertical: 60% pestañas / 40% detalle ---
+        JSplitPane splitter = new JSplitPane(JSplitPane.VERTICAL_SPLIT, panPestanas, panelDetalle);
+        splitter.setOpaque(false);
+        splitter.setBorder(null);
+        splitter.setOneTouchExpandable(false);
+        splitter.setDividerLocation(400);
+        splitter.setResizeWeight(0.6);
+
+        return splitter;
     }
 
     private DefaultTableModel crearModelo(String[] columnas) {
@@ -311,7 +364,44 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         tabla.getColumnModel().getColumn(3).setPreferredWidth(120);
     }
 
-    private void estilizarBoton(JButton boton, Color fondo) {
+    private static void estilizarTablaDetalle(JTable tabla) {
+        tabla.setBackground(TARJETA);
+        tabla.setForeground(TEXTO);
+        tabla.setGridColor(BORDE);
+        tabla.setShowVerticalLines(false);
+        tabla.setRowHeight(22);
+        tabla.setFillsViewportHeight(true);
+        tabla.setSelectionBackground(new Color(0, 120, 100));
+        tabla.setSelectionForeground(Color.WHITE);
+        tabla.getTableHeader().setReorderingAllowed(false);
+        tabla.getTableHeader().setBackground(new Color(33, 37, 41));
+        tabla.getTableHeader().setForeground(TEXTO_SUAVE);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
+
+        DefaultTableCellRenderer derecha = new DefaultTableCellRenderer();
+        derecha.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        DefaultTableCellRenderer centrada = new DefaultTableCellRenderer();
+        centrada.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Columnas: 0 texto, 1 texto, 2 texto, 3 texto, 4 centrada, 5 derecha, 6 derecha.
+        for (int i = 0; i < tabla.getColumnModel().getColumnCount(); i++) {
+            if (i == 4) {
+                tabla.getColumnModel().getColumn(i).setCellRenderer(centrada);
+            } else if (i >= 5) {
+                tabla.getColumnModel().getColumn(i).setCellRenderer(derecha);
+            }
+        }
+        tabla.getColumnModel().getColumn(0).setPreferredWidth(110);
+        tabla.getColumnModel().getColumn(1).setPreferredWidth(140);
+        tabla.getColumnModel().getColumn(2).setPreferredWidth(220);
+        tabla.getColumnModel().getColumn(3).setPreferredWidth(100);
+        tabla.getColumnModel().getColumn(4).setPreferredWidth(70);
+        tabla.getColumnModel().getColumn(5).setPreferredWidth(100);
+        tabla.getColumnModel().getColumn(6).setPreferredWidth(110);
+    }
+
+    private static void estilizarBoton(JButton boton, Color fondo) {
         boton.setBackground(fondo);
         boton.setForeground(Color.WHITE);
         boton.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -418,6 +508,106 @@ public class PanelReporteVentas extends javax.swing.JPanel {
     }
 
     // =========================================================
+    //  Detalle de fila seleccionada
+    // =========================================================
+
+    /** Llena la tabla de detalle según la pestaña activa. */
+    private void cargarDetalle(int indicePestana) {
+        modeloDetalle.setRowCount(0);
+        String sql = "";
+
+        switch (indicePestana) {
+            case 0: // Hoy
+                sql = "SELECT v.fecha_hora, COALESCE(c.nombre,'Sin cliente') AS cliente, "
+                        + "p.nombre AS producto, p.marca, "
+                        + "d.cantidad, d.precio_unitario, d.subtotal "
+                        + "FROM detalle_ventas d "
+                        + "JOIN ventas v ON v.id_venta = d.id_venta "
+                        + "LEFT JOIN clientes c ON c.id = v.id_cliente "
+                        + "JOIN productos p ON p.id_producto = d.id_producto "
+                        + "WHERE DATE(v.fecha_hora) = CURDATE() "
+                        + "ORDER BY v.fecha_hora DESC";
+                break;
+            case 1: // Este mes
+                sql = "SELECT v.fecha_hora, COALESCE(c.nombre,'Sin cliente') AS cliente, "
+                        + "p.nombre AS producto, p.marca, "
+                        + "d.cantidad, d.precio_unitario, d.subtotal "
+                        + "FROM detalle_ventas d "
+                        + "JOIN ventas v ON v.id_venta = d.id_venta "
+                        + "LEFT JOIN clientes c ON c.id = v.id_cliente "
+                        + "JOIN productos p ON p.id_producto = d.id_producto "
+                        + "WHERE YEAR(v.fecha_hora) = YEAR(CURDATE()) "
+                        + "AND MONTH(v.fecha_hora) = MONTH(CURDATE()) "
+                        + "ORDER BY v.fecha_hora DESC";
+                break;
+            case 2: // General
+                sql = "SELECT v.fecha_hora, COALESCE(c.nombre,'Sin cliente') AS cliente, "
+                        + "p.nombre AS producto, p.marca, "
+                        + "d.cantidad, d.precio_unitario, d.subtotal "
+                        + "FROM detalle_ventas d "
+                        + "JOIN ventas v ON v.id_venta = d.id_venta "
+                        + "LEFT JOIN clientes c ON c.id = v.id_cliente "
+                        + "JOIN productos p ON p.id_producto = d.id_producto "
+                        + "ORDER BY v.fecha_hora DESC";
+                break;
+            default:
+                sql = "SELECT 0, '', '', '', 0, 0, 0";
+                break;
+        }
+
+        try (Connection con = BD.getConexion();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Object[] row = {
+                    rs.getString("fecha_hora"),
+                    rs.getString("cliente"),
+                    rs.getString("producto"),
+                    rs.getString("marca"),
+                    rs.getInt("cantidad"),
+                    rs.getDouble("precio_unitario"),
+                    rs.getDouble("subtotal")
+                };
+                modeloDetalle.addRow(row);
+            }
+        } catch (Exception e) {
+            System.err.println("PanelReporteVentas.cargarDetalle: " + e.getMessage());
+        }
+
+        int num = modeloDetalle.getRowCount();
+        double total = obtenerTotalColumna(6);
+        lblDetalleResumen.setText(String.format("%d línea(s) · Total: $%,.2f", num, total));
+    }
+
+    private double obtenerTotalColumna(int colIndex) {
+        double total = 0;
+        for (int r = 0; r < modeloDetalle.getRowCount(); r++) {
+            Object v = modeloDetalle.getValueAt(r, colIndex);
+            if (v != null) {
+                try { total += Double.parseDouble(v.toString()); } catch (Exception ignored) {}
+            }
+        }
+        return total;
+    }
+
+    private void anadirListenersTablas() {
+        // Usar MouseListener en lugar de ListSelectionListener para evitar
+        // problemas de compilación con la inferencia de tipos lambda.
+        for (int i = 0; i < 3; i++) {
+            final int idx = i;
+            tablas[i].addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    if (tablas[idx].getSelectedRow() >= 0) {
+                        cargarDetalle(idx);
+                    }
+                }
+            });
+        }
+    }
+
+    // =========================================================
     //  Meta diaria
     // =========================================================
 
@@ -485,6 +675,51 @@ public class PanelReporteVentas extends javax.swing.JPanel {
                 pw.println();
             }
             JOptionPane.showMessageDialog(this, "Reporte exportado correctamente.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al exportar: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportarDetalleCsv() {
+        if (modeloDetalle.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No hay datos de detalle para exportar.",
+                    "Sin datos", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Guardar detalle de ventas");
+        fc.setSelectedFile(new java.io.File("detalle_ventas.csv"));
+        if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        java.io.File archivo = fc.getSelectedFile();
+        if (!archivo.getAbsolutePath().toLowerCase().endsWith(".csv")) {
+            archivo = new java.io.File(archivo.getAbsolutePath() + ".csv");
+        }
+        try (java.io.PrintWriter pw = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                        new java.io.FileOutputStream(archivo), java.nio.charset.StandardCharsets.UTF_8))) {
+            pw.print('\ufeff');
+            for (int c = 0; c < modeloDetalle.getColumnCount(); c++) {
+                pw.print(modeloDetalle.getColumnName(c));
+                if (c < modeloDetalle.getColumnCount() - 1) {
+                    pw.print(",");
+                }
+            }
+            pw.println();
+            for (int r = 0; r < modeloDetalle.getRowCount(); r++) {
+                for (int c = 0; c < modeloDetalle.getColumnCount(); c++) {
+                    Object v = modeloDetalle.getValueAt(r, c);
+                    String texto = v == null ? "" : v.toString().replace(",", "");
+                    pw.print(texto);
+                    if (c < modeloDetalle.getColumnCount() - 1) {
+                        pw.print(",");
+                    }
+                }
+                pw.println();
+            }
+            JOptionPane.showMessageDialog(this, "Detalle exportado correctamente.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error al exportar: " + e.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
