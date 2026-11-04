@@ -140,58 +140,56 @@ public class DialogoNuevoCombo extends JDialog {
     }
 
     private JPanel crearFormulario() {
-        JPanel form = new JPanel(new GridBagLayout());
+        JPanel form = new JPanel();
+        form.setLayout(new javax.swing.BoxLayout(form, javax.swing.BoxLayout.Y_AXIS));
         form.setBackground(TARJETA);
         form.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDE, 1, true),
-                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
+                BorderFactory.createEmptyBorder(16, 16, 14, 16)));
         form.setPreferredSize(new Dimension(300, 0));
 
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = 0;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(4, 0, 4, 8);
-        c.fill = GridBagConstraints.HORIZONTAL;
-
-        agregarCampo(form, c, "Nombre", txtNombre);
-        agregarCampo(form, c, "Descripción", txtDescripcion);
-        agregarCampo(form, c, "Precio del combo ($)", txtPrecio);
-        agregarCampo(form, c, "Inicio (YYYY-MM-DD)", txtInicio);
-        agregarCampo(form, c, "Fin (YYYY-MM-DD)", txtFin);
+        agregarCampo(form, "Nombre", txtNombre);
+        agregarCampo(form, "Descripción", txtDescripcion);
+        agregarCampo(form, "Precio del combo ($)", txtPrecio);
+        agregarCampo(form, "Inicio (YYYY-MM-DD)", txtInicio);
+        agregarCampo(form, "Fin (YYYY-MM-DD)", txtFin);
 
         chkActivo.setOpaque(false);
         chkActivo.setForeground(TEXTO);
         chkActivo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        form.add(chkActivo, c);
+        chkActivo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        form.add(chkActivo);
 
         JLabel ayuda = new JLabel("<html><div style='width:250px;color:#9aa0a6'>"
                 + "Las fechas son opcionales. Si las dejas vacías, el combo no tendrá vigencia."
                 + "</div></html>");
         ayuda.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        c.gridy++;
-        c.insets = new Insets(12, 0, 0, 0);
-        form.add(ayuda, c);
+        ayuda.setAlignmentX(Component.LEFT_ALIGNMENT);
+        form.add(javax.swing.Box.createVerticalStrut(14));
+        form.add(ayuda);
 
         return form;
     }
 
-    private void agregarCampo(JPanel form, GridBagConstraints c, String etiqueta, JTextField campo) {
+    private void agregarCampo(JPanel form, String etiqueta, JTextField campo) {
         JLabel lbl = new JLabel(etiqueta);
         lbl.setForeground(TEXTO_SUAVE);
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        form.add(lbl, c);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        c.gridy++;
         campo.setBackground(new Color(38, 41, 45));
         campo.setForeground(TEXTO);
         campo.setCaretColor(TEXTO);
+        campo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        campo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         campo.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDE),
                 BorderFactory.createEmptyBorder(5, 7, 5, 7)));
-        form.add(campo, c);
-        c.gridy++;
-        c.insets = new Insets(4, 0, 10, 8);
+
+        form.add(lbl);
+        form.add(javax.swing.Box.createVerticalStrut(4));
+        form.add(campo);
+        form.add(javax.swing.Box.createVerticalStrut(10));
     }
 
     private JPanel crearSelectorProductos() {
