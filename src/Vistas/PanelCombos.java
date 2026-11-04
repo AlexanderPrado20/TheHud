@@ -86,8 +86,19 @@ public class PanelCombos extends JPanel {
         estilizarBoton(btnActualizar, ACENTO);
         btnActualizar.addActionListener(e -> refrescar());
 
-        JPanel panelAcciones = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
+        JButton btnNuevo = new JButton("Nuevo combo");
+        btnNuevo.setIcon(FontIcon.of(MaterialDesign.MDI_PLUS, 16, Color.WHITE));
+        btnNuevo.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        estilizarBoton(btnNuevo, VERDE.darker());
+        btnNuevo.addActionListener(e -> {
+            DialogoNuevoCombo dialogo = new DialogoNuevoCombo(
+                    javax.swing.SwingUtilities.getWindowAncestor(this), this::refrescar);
+            dialogo.setVisible(true);
+        });
+
+        JPanel panelAcciones = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
         panelAcciones.setOpaque(false);
+        panelAcciones.add(btnNuevo);
         panelAcciones.add(btnActualizar);
         cabecera.add(panelAcciones, BorderLayout.EAST);
 

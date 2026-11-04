@@ -2,7 +2,7 @@ package Vistas;
 
 import Conexion.BD;
 import Vistas.PanelVentas;
-import Vistas.PanelFinanzas;
+import Vistas.PanelReporteVentas;
 import Vistas.PanelGraficas;
 import Vistas.PanelInventario;
 import Vistas.PanelCombos;
@@ -39,7 +39,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
     // Paneles de contenido (se crean una sola vez para conservar su estado)
     private PanelVentas panelVentas;
     private PanelInventario panelInventario; // Tablero de control (KPIs + gráficas)
-    private PanelFinanzas panelFinanzas;
+    private PanelReporteVentas panelReporte;
     private PanelGraficas panelGraficas;
     private PanelCombos panelCombos; // Combos / promociones
 
@@ -120,7 +120,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
     private void estilizarMenu() {
         estilizarBotonMenu(btnVentas, MaterialDesign.MDI_CART);
         estilizarBotonMenu(btnProductos, MaterialDesign.MDI_PACKAGE_VARIANT);
-        estilizarBotonMenu(btnFinanzas, MaterialDesign.MDI_CASH_MULTIPLE);
+        estilizarBotonMenu(btnFinanzas, MaterialDesign.MDI_FILE_CHART);
         estilizarBotonMenu(btnGraficas, MaterialDesign.MDI_CHART_BAR);
         estilizarBotonMenu(btnCombos, MaterialDesign.MDI_SALE);
         estilizarBotonMenu(btnExportarPdf, MaterialDesign.MDI_FILE_EXPORT);
@@ -461,7 +461,7 @@ public class FrmMenuPrnciapal extends javax.swing.JFrame {
             }
         });
 
-        btnFinanzas.setText("Cédulas Financieras");
+        btnFinanzas.setText("Reporte de ventas");
         btnFinanzas.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnFinanzasActionPerformed(evt);
@@ -551,11 +551,13 @@ btnExportarPdf.addActionListener(e -> generarEstadoResultados());
     }
 
     private void btnFinanzasActionPerformed(java.awt.event.ActionEvent evt) {
-        if (panelFinanzas == null) {
-            panelFinanzas = new PanelFinanzas();
+        if (panelReporte == null) {
+            panelReporte = new PanelReporteVentas();
+        } else {
+            panelReporte.refrescar();
         }
-        lblSeccion.setText("Cédulas Financieras");
-        mostrarPanel(panelFinanzas);
+        lblSeccion.setText("Reporte de ventas");
+        mostrarPanel(panelReporte);
     }
 
     private void btnProductosActionPerformed(java.awt.event.ActionEvent evt) {

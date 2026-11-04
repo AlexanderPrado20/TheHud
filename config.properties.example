@@ -8,7 +8,7 @@
 # El archivo config.properties NO se sube a Git (está en .gitignore).
 # ============================================================
 # IP actual de la VM. Cámbiala si cambias de red o de servidor.
-db.host=192.168.10.216
+db.host=192.168.10.224
 db.port=3306
 db.name=tienda_suplementos
 db.user=app_user

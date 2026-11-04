@@ -1449,11 +1449,13 @@ public class PanelVentas extends javax.swing.JPanel {
             String sqlDetalle = "INSERT INTO detalle_ventas (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
             String sqlStock = "UPDATE productos SET stock = stock - ? WHERE id_producto = ?";
             String sqlDetalleCombo = "INSERT INTO detalle_combos (id_venta, id_combo, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
+            String sqlComboComponentes = "SELECT id_producto, cantidad FROM combo_detalle WHERE id_combo = ?";
 
             PreparedStatement psSelectId = con.prepareStatement(sqlSelectId);
             PreparedStatement psDetalle = con.prepareStatement(sqlDetalle);
             PreparedStatement psStock = con.prepareStatement(sqlStock);
             PreparedStatement psDetalleCombo = con.prepareStatement(sqlDetalleCombo);
+            PreparedStatement psComboComponentes = con.prepareStatement(sqlComboComponentes);
 
             // 2. Recorrer la tabla del carrito
             for (int i = 0; i < modeloTabla.getRowCount(); i++) {
@@ -1462,7 +1464,8 @@ public class PanelVentas extends javax.swing.JPanel {
                 double precioU = getDouble(i, COL_PRECIO);
                 double subtotal = getDouble(i, COL_SUBTOTAL);
 
-                // Los combos/promociones se guardan aparte y no descuentan stock.
+                // Los combos/promociones se guardan aparte y descuentan el stock
+                // de cada producto que los compone (tabla combo_detalle).
                 if (codBarras.startsWith(COMBO_PREFIJO)) {
                     int idCombo = Integer.parseInt(codBarras.substring(COMBO_PREFIJO.length()));
                     psDetalleCombo.setInt(1, idVenta);
@@ -1471,6 +1474,21 @@ public class PanelVentas extends javax.swing.JPanel {
                     psDetalleCombo.setDouble(4, precioU);
                     psDetalleCombo.setDouble(5, subtotal);
                     psDetalleCombo.executeUpdate();
+
+                    try {
+                        psComboComponentes.setInt(1, idCombo);
+                        try (ResultSet rsComp = psComboComponentes.executeQuery()) {
+                            while (rsComp.next()) {
+                                int idProdCombo = rsComp.getInt("id_producto");
+                                int cantComp = rsComp.getInt("cantidad");
+                                psStock.setInt(1, cant * cantComp);
+                                psStock.setInt(2, idProdCombo);
+                                psStock.executeUpdate();
+                            }
+                        }
+                    } catch (SQLException ex) {
+                        System.err.println("No se pudo descontar stock del combo " + idCombo + ": " + ex.getMessage());
+                    }
                     continue;
                 }
 
