@@ -70,4 +70,10 @@
     nbproject/build-impl.xml file. 
 
     -->
+
+    <!-- Copia el lanzador y la configuracion junto al JAR en dist/ -->
+    <target name="-post-jar">
+        <copy file="recursos/ejecutar.bat" todir="${dist.dir}" overwrite="true"/>
+        <copy file="config.properties" todir="${dist.dir}" overwrite="true" failonerror="false"/>
+    </target>
 </project>
