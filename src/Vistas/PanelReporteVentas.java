@@ -42,8 +42,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import org.kordamp.ikonli.materialdesign.MaterialDesign;
@@ -81,6 +79,7 @@ public class PanelReporteVentas extends javax.swing.JPanel {
     private JTable tablaDetalle;
     private DefaultTableModel modeloDetalle;
     private JLabel lblDetalleResumen;
+    private JLabel lblDetalleTitulo;
 
     private final JTextField txtMeta = new JTextField(8);
     private final JLabel lblActualizado = new JLabel("--:--:--");
@@ -244,12 +243,17 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         lblDetalleResumen.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblDetalleResumen.setBorder(BorderFactory.createEmptyBorder(4, 2, 0, 0));
 
+        lblDetalleTitulo = new JLabel("Desglose de venta");
+        lblDetalleTitulo.setForeground(TEXTO);
+        lblDetalleTitulo.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblDetalleTitulo.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+
         JPanel panelDetalle = new JPanel(new BorderLayout(4, 4));
         panelDetalle.setBackground(FONDO);
         panelDetalle.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDE, 1, true),
                 BorderFactory.createEmptyBorder(8, 12, 8, 12)));
-        panelDetalle.add(new JLabel("Desglose de venta"), BorderLayout.NORTH);
+        panelDetalle.add(lblDetalleTitulo, BorderLayout.NORTH);
         panelDetalle.add(scrollDetalle, BorderLayout.CENTER);
         panelDetalle.add(lblDetalleResumen, BorderLayout.SOUTH);
 
@@ -258,10 +262,15 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         splitter.setOpaque(false);
         splitter.setBorder(null);
         splitter.setOneTouchExpandable(false);
-        splitter.setDividerLocation(400);
-        splitter.setResizeWeight(0.6);
+        splitter.setResizeWeight(0.55);
+        splitter.setDividerLocation(0.55);
 
-        return splitter;
+        JPanel cuerpo = new JPanel(new BorderLayout(16, 0));
+        cuerpo.setBackground(FONDO);
+        cuerpo.add(splitter, BorderLayout.CENTER);
+        cuerpo.add(crearPanelLateral(), BorderLayout.EAST);
+
+        return cuerpo;
     }
 
     private DefaultTableModel crearModelo(String[] columnas) {
@@ -378,18 +387,27 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         tabla.getTableHeader().setForeground(TEXTO_SUAVE);
         tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
 
-        DefaultTableCellRenderer derecha = new DefaultTableCellRenderer();
-        derecha.setHorizontalAlignment(SwingConstants.RIGHT);
+        DefaultTableCellRenderer dinero = new DefaultTableCellRenderer() {
+            @Override
+            protected void setValue(Object value) {
+                if (value instanceof Number) {
+                    setText(String.format("$%,.2f", ((Number) value).doubleValue()));
+                } else {
+                    setText(value == null ? "" : value.toString());
+                }
+            }
+        };
+        dinero.setHorizontalAlignment(SwingConstants.RIGHT);
 
         DefaultTableCellRenderer centrada = new DefaultTableCellRenderer();
         centrada.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Columnas: 0 texto, 1 texto, 2 texto, 3 texto, 4 centrada, 5 derecha, 6 derecha.
+        // Columnas: 0 texto, 1 texto, 2 texto, 3 texto, 4 centrada, 5 dinero, 6 dinero.
         for (int i = 0; i < tabla.getColumnModel().getColumnCount(); i++) {
             if (i == 4) {
                 tabla.getColumnModel().getColumn(i).setCellRenderer(centrada);
             } else if (i >= 5) {
-                tabla.getColumnModel().getColumn(i).setCellRenderer(derecha);
+                tabla.getColumnModel().getColumn(i).setCellRenderer(dinero);
             }
         }
         tabla.getColumnModel().getColumn(0).setPreferredWidth(110);
@@ -417,6 +435,9 @@ public class PanelReporteVentas extends javax.swing.JPanel {
 
     /** Recalcula todas las tablas y la lata de la meta diaria. */
     public void refrescar() {
+        int tabActiva = tabs.getSelectedIndex();
+        String periodoPrevio = periodoSeleccionado(tabActiva);
+
         double totalHoy = consultarTotalHoy();
         double progreso = metaDiaria > 0 ? totalHoy / metaDiaria : 0;
         lata.setProgreso(progreso, String.format("$%,.2f / $%,.2f", totalHoy, metaDiaria));
@@ -424,7 +445,11 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         cargarHoy();
         cargarMes();
         cargarGeneral();
-        actualizarResumenPestana();
+
+        if (tabActiva >= 0 && tabActiva < resumenes.length) {
+            resumenes[tabActiva].repaint();
+        }
+        seleccionarFilaReciente(periodoPrevio);
 
         lblActualizado.setText("Actualizado " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
     }
@@ -462,7 +487,13 @@ public class PanelReporteVentas extends javax.swing.JPanel {
         double granTotal = 0;
         int granCantidad = 0;
 
-        try (Connection con = BD.getConexion();
+        Connection con = BD.getConexion();
+        if (con == null) {
+            resumenes[indice].setText("Sin conexión a la base de datos");
+            return;
+        }
+
+        try (con;
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
@@ -487,7 +518,11 @@ public class PanelReporteVentas extends javax.swing.JPanel {
 
     private double consultarTotalHoy() {
         String sql = "SELECT COALESCE(SUM(total),0) AS total FROM ventas WHERE DATE(fecha_hora) = CURDATE()";
-        try (Connection con = BD.getConexion();
+        Connection con = BD.getConexion();
+        if (con == null) {
+            return 0;
+        }
+        try (con;
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
@@ -500,10 +535,11 @@ public class PanelReporteVentas extends javax.swing.JPanel {
     }
 
     private void actualizarResumenPestana() {
-        // Solo asegura que el resumen visible corresponda a la pestaña activa.
+        // Mantiene el resumen y el desglose de la pestaña activa.
         int i = tabs.getSelectedIndex();
         if (i >= 0 && i < resumenes.length) {
             resumenes[i].repaint();
+            seleccionarFilaReciente(periodoSeleccionado(i));
         }
     }
 
@@ -511,100 +547,198 @@ public class PanelReporteVentas extends javax.swing.JPanel {
     //  Detalle de fila seleccionada
     // =========================================================
 
-    /** Llena la tabla de detalle según la pestaña activa. */
+    /** Llena la tabla de detalle para la fila seleccionada de la pestaña activa. */
     private void cargarDetalle(int indicePestana) {
         modeloDetalle.setRowCount(0);
-        String sql = "";
 
-        switch (indicePestana) {
-            case 0: // Hoy
-                sql = "SELECT v.fecha_hora, COALESCE(c.nombre,'Sin cliente') AS cliente, "
-                        + "p.nombre AS producto, p.marca, "
-                        + "d.cantidad, d.precio_unitario, d.subtotal "
-                        + "FROM detalle_ventas d "
-                        + "JOIN ventas v ON v.id_venta = d.id_venta "
-                        + "LEFT JOIN clientes c ON c.id = v.id_cliente "
-                        + "JOIN productos p ON p.id_producto = d.id_producto "
-                        + "WHERE DATE(v.fecha_hora) = CURDATE() "
-                        + "ORDER BY v.fecha_hora DESC";
-                break;
-            case 1: // Este mes
-                sql = "SELECT v.fecha_hora, COALESCE(c.nombre,'Sin cliente') AS cliente, "
-                        + "p.nombre AS producto, p.marca, "
-                        + "d.cantidad, d.precio_unitario, d.subtotal "
-                        + "FROM detalle_ventas d "
-                        + "JOIN ventas v ON v.id_venta = d.id_venta "
-                        + "LEFT JOIN clientes c ON c.id = v.id_cliente "
-                        + "JOIN productos p ON p.id_producto = d.id_producto "
-                        + "WHERE YEAR(v.fecha_hora) = YEAR(CURDATE()) "
-                        + "AND MONTH(v.fecha_hora) = MONTH(CURDATE()) "
-                        + "ORDER BY v.fecha_hora DESC";
-                break;
-            case 2: // General
-                sql = "SELECT v.fecha_hora, COALESCE(c.nombre,'Sin cliente') AS cliente, "
-                        + "p.nombre AS producto, p.marca, "
-                        + "d.cantidad, d.precio_unitario, d.subtotal "
-                        + "FROM detalle_ventas d "
-                        + "JOIN ventas v ON v.id_venta = d.id_venta "
-                        + "LEFT JOIN clientes c ON c.id = v.id_cliente "
-                        + "JOIN productos p ON p.id_producto = d.id_producto "
-                        + "ORDER BY v.fecha_hora DESC";
-                break;
-            default:
-                sql = "SELECT 0, '', '', '', 0, 0, 0";
-                break;
+        int fila = tablas[indicePestana] == null ? -1 : tablas[indicePestana].getSelectedRow();
+        if (fila < 0) {
+            lblDetalleTitulo.setText("Desglose de venta");
+            lblDetalleResumen.setText("Selecciona una fila para ver el desglose");
+            return;
         }
 
-        try (Connection con = BD.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        // Valor de la primera columna de la fila seleccionada: hora, fecha o mes.
+        Object valor = tablas[indicePestana].getValueAt(fila, 0);
+        String periodo = valor == null ? "" : valor.toString().trim();
+        if (periodo.isEmpty()) {
+            lblDetalleTitulo.setText("Desglose de venta");
+            lblDetalleResumen.setText("Selecciona una fila para ver el desglose");
+            return;
+        }
 
-            while (rs.next()) {
-                Object[] row = {
-                    rs.getString("fecha_hora"),
-                    rs.getString("cliente"),
-                    rs.getString("producto"),
-                    rs.getString("marca"),
-                    rs.getInt("cantidad"),
-                    rs.getDouble("precio_unitario"),
-                    rs.getDouble("subtotal")
-                };
-                modeloDetalle.addRow(row);
+        // Columnas comunes a productos y combos. La fecha se formatea en SQL para
+        // evitar desfases de zona horaria al leerla con JDBC.
+        String columnas = "SELECT v.fecha_hora AS fecha_orden, "
+                + "DATE_FORMAT(v.fecha_hora, '%d/%m/%Y %H:%i') AS fecha, "
+                + "COALESCE((SELECT c.nombre FROM clientes c WHERE c.id_cliente = v.id_cliente),"
+                + "'Sin cliente') AS cliente, ";
+        String joins = " JOIN ventas v ON v.id_venta = %s.id_venta ";
+
+        String filtro;
+        switch (indicePestana) {
+            case 0: // Hoy: periodo con formato "HH:00"
+                filtro = "DATE(v.fecha_hora) = CURDATE() "
+                        + "AND DATE_FORMAT(v.fecha_hora, '%H:00') = ?";
+                break;
+            case 1: // Este mes: periodo con formato "dd/MM/yyyy"
+                filtro = "DATE(v.fecha_hora) = STR_TO_DATE(?, '%d/%m/%Y')";
+                break;
+            case 2: // General: periodo con formato "yyyy-MM"
+                filtro = "DATE_FORMAT(v.fecha_hora, '%Y-%m') = ?";
+                break;
+            default:
+                return;
+        }
+
+        String sql = columnas
+                + "p.nombre AS producto, COALESCE(p.marca,'') AS marca, "
+                + "d.cantidad, d.precio_unitario, d.subtotal "
+                + "FROM detalle_ventas d "
+                + String.format(joins, "d")
+                + "JOIN productos p ON p.id_producto = d.id_producto "
+                + "WHERE " + filtro
+                + " UNION ALL "
+                + columnas
+                + "CONCAT(co.nombre, ' (combo)') AS producto, 'Combo' AS marca, "
+                + "dc.cantidad, dc.precio_unitario, dc.subtotal "
+                + "FROM detalle_combos dc "
+                + String.format(joins, "dc")
+                + "JOIN combos co ON co.id_combo = dc.id_combo "
+                + "WHERE " + filtro
+                + " ORDER BY 1 DESC";
+
+        Connection con = BD.getConexion();
+        if (con == null) {
+            lblDetalleTitulo.setText("Desglose de venta");
+            lblDetalleResumen.setText("Sin conexión a la base de datos. Revisa config.properties.");
+            return;
+        }
+
+        String sqlCobrado = "SELECT COALESCE(SUM(v.total),0) AS total FROM ventas v WHERE " + filtro;
+        double totalCobrado = 0;
+
+        try (con;
+             PreparedStatement ps = con.prepareStatement(sql);
+             PreparedStatement psCobrado = con.prepareStatement(sqlCobrado)) {
+
+            ps.setString(1, periodo);
+            ps.setString(2, periodo);
+            psCobrado.setString(1, periodo);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    modeloDetalle.addRow(new Object[]{
+                        rs.getString("fecha"),
+                        rs.getString("cliente"),
+                        rs.getString("producto"),
+                        rs.getString("marca"),
+                        rs.getInt("cantidad"),
+                        rs.getDouble("precio_unitario"),
+                        rs.getDouble("subtotal")
+                    });
+                }
+            }
+
+            try (ResultSet rs2 = psCobrado.executeQuery()) {
+                if (rs2.next()) {
+                    totalCobrado = rs2.getDouble("total");
+                }
             }
         } catch (Exception e) {
-            System.err.println("PanelReporteVentas.cargarDetalle: " + e.getMessage());
+            e.printStackTrace();
+            lblDetalleTitulo.setText("Desglose de venta");
+            lblDetalleResumen.setText("Error al cargar el desglose: " + e.getMessage());
+            return;
         }
 
         int num = modeloDetalle.getRowCount();
         double total = obtenerTotalColumna(6);
-        lblDetalleResumen.setText(String.format("%d línea(s) · Total: $%,.2f", num, total));
+        lblDetalleTitulo.setText("Desglose de venta · " + periodo);
+
+        String resumen;
+        if (num == 0) {
+            resumen = String.format("Sin líneas de producto · Cobrado: $%,.2f", totalCobrado);
+        } else {
+            resumen = String.format("%d línea(s) · Subtotal: $%,.2f", num, total);
+            if (Math.abs(total - totalCobrado) >= 0.005) {
+                resumen += String.format(" · Cobrado: $%,.2f", totalCobrado);
+            }
+        }
+        lblDetalleResumen.setText(resumen);
     }
 
     private double obtenerTotalColumna(int colIndex) {
         double total = 0;
         for (int r = 0; r < modeloDetalle.getRowCount(); r++) {
             Object v = modeloDetalle.getValueAt(r, colIndex);
-            if (v != null) {
-                try { total += Double.parseDouble(v.toString()); } catch (Exception ignored) {}
+            if (v instanceof Number) {
+                total += ((Number) v).doubleValue();
             }
         }
         return total;
     }
 
     private void anadirListenersTablas() {
-        // Usar MouseListener en lugar de ListSelectionListener para evitar
-        // problemas de compilación con la inferencia de tipos lambda.
         for (int i = 0; i < 3; i++) {
             final int idx = i;
-            tablas[i].addMouseListener(new java.awt.event.MouseAdapter() {
+            tablas[i].getSelectionModel().addListSelectionListener(new ListSelectionListener() {
                 @Override
-                public void mouseClicked(java.awt.event.MouseEvent e) {
-                    if (tablas[idx].getSelectedRow() >= 0) {
+                public void valueChanged(ListSelectionEvent e) {
+                    if (!e.getValueIsAdjusting()) {
                         cargarDetalle(idx);
                     }
                 }
             });
         }
+    }
+
+    /** Devuelve el periodo (primera columna) de la fila seleccionada, o null. */
+    private String periodoSeleccionado(int indicePestana) {
+        if (indicePestana < 0 || indicePestana >= tablas.length || tablas[indicePestana] == null) {
+            return null;
+        }
+        int fila = tablas[indicePestana].getSelectedRow();
+        if (fila < 0) {
+            return null;
+        }
+        Object valor = tablas[indicePestana].getValueAt(fila, 0);
+        return valor == null ? null : valor.toString();
+    }
+
+    /**
+     * Selecciona la fila del periodo indicado (o la más reciente) para que el
+     * desglose no quede vacío, conservando la selección entre refrescos.
+     */
+    private void seleccionarFilaReciente(String periodoPrevio) {
+        int i = tabs.getSelectedIndex();
+        if (i < 0 || i >= tablas.length || tablas[i] == null) {
+            return;
+        }
+        if (tablas[i].getRowCount() == 0) {
+            modeloDetalle.setRowCount(0);
+            lblDetalleTitulo.setText("Desglose de venta");
+            lblDetalleResumen.setText("Sin ventas en este periodo");
+            return;
+        }
+
+        int objetivo = -1;
+        if (periodoPrevio != null) {
+            for (int r = 0; r < tablas[i].getRowCount(); r++) {
+                Object valor = tablas[i].getValueAt(r, 0);
+                if (periodoPrevio.equals(String.valueOf(valor))) {
+                    objetivo = r;
+                    break;
+                }
+            }
+        }
+        if (objetivo < 0) {
+            objetivo = tablas[i].getRowCount() - 1;
+        }
+        if (tablas[i].getSelectedRow() != objetivo) {
+            tablas[i].setRowSelectionInterval(objetivo, objetivo);
+        }
+        cargarDetalle(i);
     }
 
     // =========================================================

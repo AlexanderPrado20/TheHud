@@ -9,6 +9,10 @@
 # Configuración local (contiene credenciales)
 /config.properties
 
+# Registros de compilación
+/build_out.txt
+/build_err.txt
+
 # Sistema
 .DS_Store
 Thumbs.db
